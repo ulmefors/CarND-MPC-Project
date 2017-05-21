@@ -5,21 +5,26 @@
 
 using CppAD::AD;
 
-// TODO: Set the timestep length and duration
-size_t N = 0;
-double dt = 0;
+const size_t N = 50;
+const double dt = 0.05;
 
-// This value assumes the model presented in the classroom is used.
-//
-// It was obtained by measuring the radius formed by running the vehicle in the
-// simulator around in a circle with a constant steering angle and velocity on a
-// flat terrain.
-//
-// Lf was tuned until the the radius formed by the simulating the model
-// presented in the classroom matched the previous radius.
-//
-// This is the length from front to CoG that has a similar radius.
+// length from front to CoG
 const double Lf = 2.67;
+
+// reference errors (0) and speed (in mph)
+const double ref_cte = 0;
+const double ref_epsi = 0;
+const double ref_v = 30;
+
+// one vector with all variables
+const size_t x_start = 0;
+const size_t y_start = x_start + N;
+const size_t v_start = y_start + N;
+const size_t psi_start = v_start + N;
+const size_t cte_start = psi_start + N;
+const size_t epsi_start = cte_start + N;
+const size_t delta_start = epsi_start + N;
+const size_t a_start = delta_start + N - 1;
 
 class FG_eval {
  public:
@@ -33,6 +38,26 @@ class FG_eval {
     // fg a vector of constraints, x is a vector of constraints.
     // NOTE: You'll probably go back and forth between this function and
     // the Solver function below.
+
+    fg[0] = 0;
+
+    // state cost
+    for (size_t i = 0; i < N; i++) {
+      fg[0] += CppAD::pow(vars[cte_start + i] - ref_cte, 2);
+      fg[0] += CppAD::pow(vars[epsi_start + i] - ref_epsi, 2);
+      fg[0] += CppAD::pow(vars[v_start + i] - ref_v, 2);
+    }
+
+    for (size_t i = 0; i < N-1; i++) {
+      fg[0] += CppAD::pow(vars[delta_start + i], 2);
+      fg[0] += CppAD::pow(vars[a_start + i], 2);
+    }
+
+    for (size_t i = 0; i < N-2; i++) {
+      fg[0] += CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
+      fg[0] += CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
+    }
+
   }
 };
 
@@ -47,12 +72,11 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   size_t i;
   typedef CPPAD_TESTVECTOR(double) Dvector;
 
-  // TODO: Set the number of model variables (includes both states and inputs).
-  // For example: If the state is a 4 element vector, the actuators is a 2
-  // element vector and there are 10 timesteps. The number of variables is:
-  //
-  // 4 * 10 + 2 * 9
-  size_t n_vars = 0;
+  // state variables x, y, v, psi
+  size_t n_state_vars = 4;
+  // actuator variables delta, a
+  size_t n_actuator_vars = 2;
+  size_t n_vars = n_state_vars * N + n_actuator_vars * (N-1);
   // TODO: Set the number of constraints
   size_t n_constraints = 0;
 
