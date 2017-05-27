@@ -5,8 +5,8 @@
 
 using CppAD::AD;
 
-const size_t N = 12;
-const double dt = 0.100;
+const size_t N = 10;
+const double dt = 0.120;
 
 // length from front to CoG
 const double Lf = 2.67;
@@ -14,7 +14,7 @@ const double Lf = 2.67;
 // reference errors (0) and speed (converts from mph to m/s)
 const double ref_cte = 0;
 const double ref_epsi = 0;
-const double ref_v = 60 * 1609/3600;
+const double ref_v = 80 * 1609/3600;
 
 // one vector with all variables
 const size_t x_start = 0;
@@ -40,21 +40,21 @@ class FG_eval {
 
     // state cost
     for (size_t i = 0; i < N; i++) {
-      fg[0] += 1 * CppAD::pow(vars[cte_start + i] - ref_cte, 2);
-      fg[0] += 1 * CppAD::pow(vars[epsi_start + i] - ref_epsi, 2);
+      fg[0] += 3E1 * CppAD::pow(vars[cte_start + i] - ref_cte, 2);
+      fg[0] += 1E4 * CppAD::pow(vars[epsi_start + i] - ref_epsi, 2);
       fg[0] += 1 * CppAD::pow(vars[v_start + i] - ref_v, 2);
     }
 
     // actuator cost
     for (size_t i = 0; i < N - 1; i++) {
-      fg[0] += 1E3 * CppAD::pow(vars[delta_start + i], 2);
+      fg[0] += 1 * CppAD::pow(vars[delta_start + i], 2);
       fg[0] += 1 * CppAD::pow(vars[a_start + i], 2);
     }
 
     // actuator change cost
     for (size_t i = 0; i < N - 2; i++) {
-      fg[0] += 1E5 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
-      fg[0] += 1 * CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
+      fg[0] += 3E5 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
+      fg[0] += 1E2 * CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
     }
 
     // cost is first element and others are pushed one position
