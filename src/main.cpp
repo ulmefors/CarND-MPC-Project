@@ -137,7 +137,8 @@ int main() {
           double psi_desired = atan(derivative);
           epsi = psi - psi_desired;
 
-          state << px, py, psi, v, cte, epsi;
+          size_t latency_mil = 100;
+          state << px + v * latency_mil/1000, py, psi, v, cte, epsi;
 
           vector<double> solution = mpc.Solve(state, coeffs);
 
@@ -198,16 +199,9 @@ int main() {
 
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           // std::cout << msg << std::endl;
-          // Latency
-          // The purpose is to mimic real driving conditions where
-          // the car does actuate the commands instantly.
-          //
-          // Feel free to play around with this value but should be to drive
-          // around the track with 100ms latency.
-          //
-          // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
-          // SUBMITTING.
-          this_thread::sleep_for(chrono::milliseconds(100));
+
+          // latency in milliseconds
+          this_thread::sleep_for(chrono::milliseconds(latency_mil));
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
