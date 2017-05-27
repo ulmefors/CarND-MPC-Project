@@ -42,18 +42,18 @@ class FG_eval {
     for (size_t i = 0; i < N; i++) {
       fg[0] += 5E1 * CppAD::pow(vars[cte_start + i] - ref_cte, 2);
       fg[0] += 1E4 * CppAD::pow(vars[epsi_start + i] - ref_epsi, 2);
-      fg[0] += 1 * CppAD::pow(vars[v_start + i] - ref_v, 2);
+      fg[0] += 1E0 * CppAD::pow(vars[v_start + i] - ref_v, 2);
     }
 
     // actuator cost
     for (size_t i = 0; i < N - 1; i++) {
-      fg[0] += 1 * CppAD::pow(vars[delta_start + i], 2);
-      fg[0] += 1 * CppAD::pow(vars[a_start + i], 2);
+      fg[0] += 1E0 * CppAD::pow(vars[delta_start + i], 2);
+      fg[0] += 1E0 * CppAD::pow(vars[a_start + i], 2);
     }
 
     // actuator change cost
     for (size_t i = 0; i < N - 2; i++) {
-      fg[0] += 1E5* CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
+      fg[0] += 1E5 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
       fg[0] += 1E1 * CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
     }
 
@@ -192,21 +192,16 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   // object that computes objective and constraints
   FG_eval fg_eval(coeffs);
 
-  //
   // options for IPOPT solver
   std::string options;
-  // Uncomment this if you'd like more print information
+  // more print information
   options += "Integer print_level  0\n";
-  // NOTE: Setting sparse to true allows the solver to take advantage
-  // of sparse routines, this makes the computation MUCH FASTER. If you
-  // can uncomment 1 of these and see if it makes a difference or not but
-  // if you uncomment both the computation time should go up in orders of
-  // magnitude.
+  // Setting sparse to true allows the solver to take advantage
+  // of sparse routines, this makes the computation MUCH FASTER.
   options += "Sparse  true        forward\n";
   options += "Sparse  true        reverse\n";
-  // NOTE: Currently the solver has a maximum time limit of 0.5 seconds.
-  // Change this as you see fit.
-  options += "Numeric max_cpu_time          0.5\n";
+  // solver has a maximum time limit of 0.05 seconds.
+  options += "Numeric max_cpu_time          0.05\n";
 
   // place to return solution
   CppAD::ipopt::solve_result<Dvector> solution;
