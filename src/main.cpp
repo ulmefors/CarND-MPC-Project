@@ -11,6 +11,8 @@
 
 // for convenience
 using json = nlohmann::json;
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 // For converting back and forth between radians and degrees.
 constexpr double pi() { return M_PI; }
@@ -77,7 +79,7 @@ int main() {
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
     string sdata = string(data).substr(0, length);
-    cout << sdata << endl;
+    // cout << sdata << endl;
     if (sdata.size() > 2 && sdata[0] == '4' && sdata[1] == '2') {
       string s = hasData(sdata);
       if (s != "") {
@@ -91,36 +93,60 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
+          double cte = 0;
+          double epsi = 0;
 
-          Eigen::VectorXd coeffs = polyfit(Eigen::VectorXd::Map(ptsx.data(), ptsx.size()),
-                                           Eigen::VectorXd::Map(ptsy.data(), ptsy.size()),
-                                           3);
+          // number of waypoints
+          size_t n_points = ptsx.size();
+          assert(ptsx.size() == ptsy.size());
 
-          // TODO: Coordinate system
-          // calculate cte
-          double cte = polyeval(coeffs, px) - py;
+          // waypoints in world map coordinates
+          VectorXd ptsx_world = VectorXd::Map(ptsx.data(), ptsx.size());
+          VectorXd ptsy_world = VectorXd::Map(ptsy.data(), ptsy.size());
 
-          // TODO: Coordinate system
+          // translate to vehicle position (px, py)
+          MatrixXd waypoints = MatrixXd(2, n_points);
+          waypoints.row(0) = ptsx_world - px * VectorXd::Ones(n_points);
+          waypoints.row(1) = ptsy_world - py * VectorXd::Ones(n_points);
+
+          // rotate coordinates about vehicle with angle psi
+          MatrixXd rotation_matrix = Eigen::MatrixXd(2, 2);
+          rotation_matrix << cos(psi), sin(psi), -sin(psi), cos(psi);
+          MatrixXd points_vehicle = rotation_matrix * waypoints;
+
+          // waypoints in vehicle coordinates
+          VectorXd ptsx_vehicle = points_vehicle.row(0);
+          VectorXd ptsy_vehicle = points_vehicle.row(1);
+
+          // third order polynomial path through waypoints
+          VectorXd coeffs = polyfit(ptsx_vehicle, ptsy_vehicle, 3);
+
+          // define state in vehicle coordinates
+          Eigen::VectorXd state = Eigen::VectorXd(6);
+          px = 0;
+          py = 0;
+          psi = 0;
+          v = v * 1609 / 3600; // meters per second instead of mph
+          cte = polyeval(coeffs, px) - py;
+
           // calculate epsi
           double derivative = 0;
           for (size_t k = 1; k < coeffs.size(); k++) {
             derivative += coeffs[k] * k * pow(px, k-1);
           }
-
           double psi_desired = atan(derivative);
-          double epsi = psi - psi_desired;
+          epsi = psi - psi_desired;
 
-          // define state
-          Eigen::VectorXd state = Eigen::VectorXd(6);
           state << px, py, psi, v, cte, epsi;
 
           vector<double> solution = mpc.Solve(state, coeffs);
 
           // TODO: steer = function(delta)
-          // Denormalize so that 25° (0.436 rad) results in 1.0 actuator value
+          // negative steering to the left is defined as positive in vehicle coordinates
+          // denormalize so that 25° (0.436 rad) results in 1.0 actuator value
           double delta = solution[0];
           double steer_value = -delta;
-          steer_value /= 0.436332;
+          steer_value /= deg2rad(25);
 
           // TODO: throttle = function(a)
           double a = solution[1];
@@ -141,6 +167,13 @@ int main() {
           vector<double> mpc_x_vals;
           vector<double> mpc_y_vals;
 
+          // 1 delta, 1 a, N x, N y
+          size_t N = (solution.size() - 2)/2;
+          for (size_t k = 0; k < N; k++) {
+            mpc_x_vals.push_back(solution[2 + k]);
+            mpc_y_vals.push_back(solution[2 + k + N]);;
+          }
+
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
 
@@ -151,6 +184,11 @@ int main() {
           vector<double> next_x_vals;
           vector<double> next_y_vals;
 
+          for (size_t k = 0; k < n_points; k++) {
+            next_x_vals.push_back(ptsx_vehicle[k]);
+            next_y_vals.push_back(ptsy_vehicle[k]);
+          }
+
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
 
@@ -159,7 +197,7 @@ int main() {
 
 
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          // std::cout << msg << std::endl;
           // Latency
           // The purpose is to mimic real driving conditions where
           // the car does actuate the commands instantly.

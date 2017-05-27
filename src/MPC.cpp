@@ -5,16 +5,16 @@
 
 using CppAD::AD;
 
-const size_t N = 20;
-const double dt = 0.05;
+const size_t N = 24;
+const double dt = 0.075;
 
 // length from front to CoG
 const double Lf = 2.67;
 
-// reference errors (0) and speed (in mph)
+// reference errors (0) and speed (converts from mph to m/s)
 const double ref_cte = 0;
 const double ref_epsi = 0;
-const double ref_v = 30;
+const double ref_v = 30 * 1609/3600;
 
 // one vector with all variables
 const size_t x_start = 0;
@@ -53,7 +53,7 @@ class FG_eval {
 
     // actuator change cost
     for (size_t i = 0; i < N - 2; i++) {
-      fg[0] += CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
+      fg[0] += 1000 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
       fg[0] += CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
     }
 
