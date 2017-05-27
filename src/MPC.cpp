@@ -149,8 +149,8 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   vars[y_start] = y;
   vars[v_start] = v;
   vars[psi_start] = psi;
-  vars[cte] = cte;
-  vars[epsi] = epsi;
+  vars[cte_start] = cte;
+  vars[epsi_start] = epsi;
 
   // limits for x
   Dvector vars_lowerbound(n_vars);
