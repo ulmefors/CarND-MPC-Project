@@ -9,6 +9,18 @@ Self-Driving Car Engineer Nanodegree Program
 The state is defined as [x, y, &psi;, v, cte, e&psi;] where (x, y) is the vehicle position, &psi; is the orientation, v is speed (scalar), cte is the cross track error, and e&psi; is the orientation error.
 The actuators are [&delta;, a] and correspond to the steering angle and acceleration.
 
+Steering angle within the MPC is positive when driving to the left (positive y direction) whereas the opposite is true in the simulator. In addition, the optimization calculations use values for steering angle measured in radians whereas the range for the simulator is [-1, 1] (same as brake/accelerator).
+The corresponding conversions are performed before sending values from the MPC to the simulator.
+
+The Ipopt solver takes the state vector and upper/lower bounds for all values.
+Positions and angles can take very small or large values whereas steering angle and acceleration are more limited (&#177;25° and &#177;3 m/s&#178; respectively).
+Max CPU time is set at 50 ms.
+
+### Cost function
+The cost function requires careful tuning in order to achieve good control performance. The cte cost forces the vehicle closer to the waypoints but too large values will cause overshoot, particularly when driving with latency.
+The e&psi; cost forces the vehicle to steer in parallel with the waypoint path which mitigates overshoot but can allow the vehicle to drive off-center.
+The third most heavily weighted cost is rate of change of steering angle which forces the vehicle to take smooth turns but may reduce ability to take sharp corners.
+
 ## Time and prediction
 Choosing number of timesteps `N` and elapsed time per step `dt` will determine the total prediction time `N * dt`. The prediction time must be large enough to predict a meaningful distance of the road ahead.
 If the prediction time is too long there is a risk of too little importance being given to the immediate road ahead which can result in too sharp corners.
