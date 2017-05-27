@@ -5,8 +5,8 @@
 
 using CppAD::AD;
 
-const size_t N = 10;
-const double dt = 0.120;
+const size_t N = 8;
+const double dt = 0.200;
 
 // length from front to CoG
 const double Lf = 2.67;
@@ -14,7 +14,7 @@ const double Lf = 2.67;
 // reference errors (0) and speed (converts from mph to m/s)
 const double ref_cte = 0;
 const double ref_epsi = 0;
-const double ref_v = 80 * 1609/3600;
+const double ref_v = 100 * 1609/3600;
 
 // one vector with all variables
 const size_t x_start = 0;
@@ -53,8 +53,8 @@ class FG_eval {
 
     // actuator change cost
     for (size_t i = 0; i < N - 2; i++) {
-      fg[0] += 3E5 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
-      fg[0] += 1E2 * CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
+      fg[0] += 1E6* CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
+      fg[0] += 1E1 * CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
     }
 
     // cost is first element and others are pushed one position
@@ -162,8 +162,8 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
 
   // minimum/maximum acceleration mph/s
   for (size_t i = a_start; i < n_vars; i++) {
-    vars_lowerbound[i] = -1.0;
-    vars_upperbound[i] =  1.0;
+    vars_lowerbound[i] = -3.0;
+    vars_upperbound[i] =  3.0;
   }
 
   // Lower and upper limits for the constraints
