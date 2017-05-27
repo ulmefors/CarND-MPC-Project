@@ -19,9 +19,9 @@ const double ref_v = 30;
 // one vector with all variables
 const size_t x_start = 0;
 const size_t y_start = x_start + N;
-const size_t v_start = y_start + N;
-const size_t psi_start = v_start + N;
-const size_t cte_start = psi_start + N;
+const size_t psi_start = y_start + N;
+const size_t v_start = psi_start + N;
+const size_t cte_start = v_start + N;
 const size_t epsi_start = cte_start + N;
 const size_t delta_start = epsi_start + N;
 const size_t a_start = delta_start + N - 1;
@@ -60,8 +60,8 @@ class FG_eval {
     // cost is first element and others are pushed one position
     fg[1 + x_start] = vars[x_start];
     fg[1 + y_start] = vars[y_start];
-    fg[1 + v_start] = vars[v_start];
     fg[1 + psi_start] = vars[psi_start];
+    fg[1 + v_start] = vars[v_start];
     fg[1 + cte_start] = vars[cte_start];
     fg[1 + epsi_start] = vars[epsi_start];
 
@@ -69,16 +69,16 @@ class FG_eval {
       // state at time t
       AD<double> x0 = vars[x_start + i];
       AD<double> y0 = vars[y_start + i];
-      AD<double> v0 = vars[v_start + i];
       AD<double> psi0 = vars[psi_start + i];
+      AD<double> v0 = vars[v_start + i];
       AD<double> cte0 = vars[cte_start + i];
       AD<double> epsi0 = vars[epsi_start + i];
 
       // state at time t+1
       AD<double> x1 = vars[x_start + i + 1];
       AD<double> y1 = vars[y_start + i + 1];
-      AD<double> v1 = vars[v_start + i + 1];
       AD<double> psi1 = vars[psi_start + i + 1];
+      AD<double> v1 = vars[v_start + i + 1];
       AD<double> cte1 = vars[cte_start + i + 1];
       AD<double> epsi1 = vars[epsi_start + i + 1];
 
@@ -102,8 +102,8 @@ class FG_eval {
       // deviation between desired point and predicted point
       fg[2 + x_start + i] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
       fg[2 + y_start + i] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
-      fg[2 + v_start + i] = v1 - (v0 + a0 * dt);
       fg[2 + psi_start + i] = psi1 - (psi0 + v0/Lf * delta0 * dt);
+      fg[2 + v_start + i] = v1 - (v0 + a0 * dt);
       fg[2 + cte_start + i] = cte1 - ((f0 - y0) + v0 * CppAD::sin(epsi0) * dt);
       fg[2 + epsi_start + i] = epsi1 - ((psi0 - psi_desired0) + v0/Lf * delta0 * dt);
     }
@@ -123,8 +123,8 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
 
   double x = state[0];
   double y = state[1];
-  double v = state[2];
-  double psi = state[3];
+  double psi = state[2];
+  double v = state[3];
   double cte = state[4];
   double epsi = state[5];
 
@@ -147,8 +147,8 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   // initial variable values
   vars[x_start] = x;
   vars[y_start] = y;
-  vars[v_start] = v;
   vars[psi_start] = psi;
+  vars[v_start] = v;
   vars[cte_start] = cte;
   vars[epsi_start] = epsi;
 
@@ -185,15 +185,15 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
 
   constraints_lowerbound[x_start] = x;
   constraints_lowerbound[y_start] = y;
-  constraints_lowerbound[v_start] = v;
   constraints_lowerbound[psi_start] = psi;
+  constraints_lowerbound[v_start] = v;
   constraints_lowerbound[cte_start] = cte;
   constraints_lowerbound[epsi_start] = epsi;
 
   constraints_upperbound[x_start] = x;
   constraints_upperbound[y_start] = y;
-  constraints_upperbound[v_start] = v;
   constraints_upperbound[psi_start] = psi;
+  constraints_upperbound[v_start] = v;
   constraints_upperbound[cte_start] = cte;
   constraints_upperbound[epsi_start] = epsi;
 
