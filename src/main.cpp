@@ -68,7 +68,7 @@ Eigen::VectorXd polyfit(Eigen::VectorXd xvals, Eigen::VectorXd yvals,
 int main() {
   uWS::Hub h;
 
-  // MPC is initialized here!
+  // initialize MPC
   MPC mpc;
 
   h.onMessage([&mpc](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
@@ -92,14 +92,43 @@ int main() {
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
 
-          /*
-          * TODO: Calculate steeering angle and throttle using MPC.
-          *
-          * Both are in between [-1, 1].
-          *
-          */
-          double steer_value;
-          double throttle_value;
+          Eigen::VectorXd coeffs = polyfit(Eigen::VectorXd::Map(ptsx.data(), ptsx.size()),
+                                           Eigen::VectorXd::Map(ptsy.data(), ptsy.size()),
+                                           3);
+
+          // TODO: Coordinate system
+          // calculate cte
+          double cte = polyeval(coeffs, px) - py;
+
+          // TODO: Coordinate system
+          // calculate epsi
+          double derivate = 0;
+          for (size_t k = 0; k < coeffs.size(); k++) {
+            derivate += coeffs[k] * k * pow(px, k-1);
+          }
+          double psi_desired = atan(derivate);
+          double epsi = psi - psi_desired;
+
+          // define state
+          Eigen::VectorXd state = Eigen::VectorXd(6);
+          state << px, py, psi, v, cte, epsi;
+
+          vector<double> solution = mpc.Solve(state, coeffs);
+
+          // TODO: steer = function(delta)
+          // Denormalize so that 25° (0.436 rad) results in 1.0 actuator value
+          double delta = solution[0];
+          double steer_value = -delta;
+          steer_value /= 0.436332;
+
+          // TODO: throttle = function(a)
+          double a = solution[1];
+          double throttle_value = a;
+
+          if (steer_value < -1) steer_value = -1;
+          if (steer_value > 1) steer_value = 1;
+          if (throttle_value < -1) throttle_value = -1;
+          if (throttle_value > 1) throttle_value = 1;
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
