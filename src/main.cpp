@@ -102,11 +102,12 @@ int main() {
 
           // TODO: Coordinate system
           // calculate epsi
-          double derivate = 0;
-          for (size_t k = 0; k < coeffs.size(); k++) {
-            derivate += coeffs[k] * k * pow(px, k-1);
+          double derivative = 0;
+          for (size_t k = 1; k < coeffs.size(); k++) {
+            derivative += coeffs[k] * k * pow(px, k-1);
           }
-          double psi_desired = atan(derivate);
+
+          double psi_desired = atan(derivative);
           double epsi = psi - psi_desired;
 
           // define state

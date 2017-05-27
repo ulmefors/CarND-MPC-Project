@@ -93,11 +93,11 @@ class FG_eval {
       }
 
       // differentiate polynomial calculate psi
-      AD<double> derivate0 = 0;
-      for (size_t j = 0; j < coeffs.size(); j++) {
-        derivate0 += coeffs[j] * j * CppAD::pow(x0, j-1);
+      AD<double> derivative0 = 0;
+      for (size_t j = 1; j < coeffs.size(); j++) {
+        derivative0 += coeffs[j] * j * CppAD::pow(x0, j-1);
       }
-      AD<double> psi_desired0 = CppAD::atan(derivate0);
+      AD<double> psi_desired0 = CppAD::atan(derivative0);
 
       // deviation between desired point and predicted point
       fg[2 + x_start + i] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
