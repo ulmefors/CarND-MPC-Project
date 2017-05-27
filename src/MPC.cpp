@@ -5,7 +5,7 @@
 
 using CppAD::AD;
 
-const size_t N = 50;
+const size_t N = 20;
 const double dt = 0.05;
 
 // length from front to CoG
@@ -87,16 +87,8 @@ class FG_eval {
       AD<double> a0 = vars[a_start + i];
 
       // desired location f and heading psi
-      AD<double> f0 = 0;
-      for (size_t j = 0; j < coeffs.size(); j++) {
-        f0 += coeffs[j] * CppAD::pow(x0, j);
-      }
-
-      // differentiate polynomial calculate psi
-      AD<double> derivative0 = 0;
-      for (size_t j = 1; j < coeffs.size(); j++) {
-        derivative0 += coeffs[j] * j * CppAD::pow(x0, j-1);
-      }
+      AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * x0 * x0 + coeffs[3] * x0 * x0 * x0;
+      AD<double> derivative0 = coeffs[1] + 2 * coeffs[2] * x0 + 3 * coeffs[3] * x0 * x0;
       AD<double> psi_desired0 = CppAD::atan(derivative0);
 
       // deviation between desired point and predicted point
