@@ -67,6 +67,37 @@ Eigen::VectorXd polyfit(Eigen::VectorXd xvals, Eigen::VectorXd yvals,
   return result;
 }
 
+/***
+ * Convert waypoints from global to vehicle coordinates
+ * @param ptsx waypoints global x-positions
+ * @param ptsy waypoints global y-positions
+ * @param px vehicle global x-position
+ * @param py vehicle global y-position
+ * @param psi vehicle global heading
+ * @return Waypoints in vehicle coordinates
+ */
+Eigen::MatrixXd getWaypoints(vector<double> ptsx, vector<double> ptsy, double px, double py, double psi) {
+  // number of waypoints
+  size_t n_points = ptsx.size();
+  assert(ptsx.size() == ptsy.size());
+
+  // waypoints in world map coordinates
+  VectorXd ptsx_world = VectorXd::Map(ptsx.data(), ptsx.size());
+  VectorXd ptsy_world = VectorXd::Map(ptsy.data(), ptsy.size());
+
+  // translate to vehicle position (px, py)
+  MatrixXd waypoints = MatrixXd(2, n_points);
+  waypoints.row(0) = ptsx_world - px * VectorXd::Ones(n_points);
+  waypoints.row(1) = ptsy_world - py * VectorXd::Ones(n_points);
+
+  // rotate coordinates about vehicle with angle psi
+  MatrixXd rotation_matrix = Eigen::MatrixXd(2, 2);
+  rotation_matrix << cos(psi), sin(psi), -sin(psi), cos(psi);
+  MatrixXd waypoints_vehicle = rotation_matrix * waypoints;
+
+  return waypoints_vehicle;
+}
+
 int main() {
   uWS::Hub h;
 
@@ -96,25 +127,8 @@ int main() {
           double cte = 0;
           double epsi = 0;
 
-          // number of waypoints
-          size_t n_points = ptsx.size();
-          assert(ptsx.size() == ptsy.size());
-
-          // waypoints in world map coordinates
-          VectorXd ptsx_world = VectorXd::Map(ptsx.data(), ptsx.size());
-          VectorXd ptsy_world = VectorXd::Map(ptsy.data(), ptsy.size());
-
-          // translate to vehicle position (px, py)
-          MatrixXd waypoints = MatrixXd(2, n_points);
-          waypoints.row(0) = ptsx_world - px * VectorXd::Ones(n_points);
-          waypoints.row(1) = ptsy_world - py * VectorXd::Ones(n_points);
-
-          // rotate coordinates about vehicle with angle psi
-          MatrixXd rotation_matrix = Eigen::MatrixXd(2, 2);
-          rotation_matrix << cos(psi), sin(psi), -sin(psi), cos(psi);
-          MatrixXd waypoints_vehicle = rotation_matrix * waypoints;
-
           // waypoints in vehicle coordinates
+          MatrixXd waypoints_vehicle = getWaypoints(ptsx, ptsy, px, py, psi);
           VectorXd ptsx_vehicle = waypoints_vehicle.row(0);
           VectorXd ptsy_vehicle = waypoints_vehicle.row(1);
 
@@ -122,7 +136,7 @@ int main() {
           VectorXd coeffs = polyfit(ptsx_vehicle, ptsy_vehicle, 3);
 
           // define state in vehicle coordinates
-          Eigen::VectorXd state = Eigen::VectorXd(6);
+          VectorXd state = VectorXd(6);
           px = 0;
           py = 0;
           psi = 0;
@@ -181,7 +195,7 @@ int main() {
           vector<double> next_x_vals;
           vector<double> next_y_vals;
 
-          for (size_t k = 0; k < n_points; k++) {
+          for (size_t k = 0; k < ptsx_vehicle.size(); k++) {
             next_x_vals.push_back(ptsx_vehicle[k]);
             next_y_vals.push_back(ptsy_vehicle[k]);
           }
